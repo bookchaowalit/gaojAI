@@ -1,0 +1,90 @@
+from llama_index.core import StorageContext, VectorStoreIndex, ServiceContext
+from llama_index.core.schema import TextNode
+from llama_index.core.vector_stores.types import MetadataFilter, MetadataFilters
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.vector_stores.postgres import PGVectorStore
+from utilities.llm import openai_api_call
+from llama_index.core.chat_engine.context import ContextChatEngine
+from utilities.constants import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, VECTOR_DB_NAME
+
+
+def _init_vector_store(
+    table_name: str,
+    dimension: int = 1024,
+    hybrid_search: bool = False,
+    text_search_config: str = "english",
+):
+    """
+    Initialize a vector store with the given table name and dimension.
+
+    Args:
+        table_name (str): The name of the table in the database.
+        dimension (int, optional): The dimension of the vectors to be stored. The dimension is dependent on the model used. Defaults to 1536.
+        hybrid_search (bool, optional): Flag indicating whether to enable hybrid search. Defaults to False.
+        text_search_config (str, optional): The text search configuration to be used. Defaults to "english".
+
+    Returns:
+        PGVectorStore
+    """
+    vector_store = PGVectorStore.from_params(
+        database=VECTOR_DB_NAME,
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        table_name=table_name,
+        embed_dim=dimension,
+        hybrid_search=hybrid_search,
+        text_search_config=text_search_config,
+    )
+    return vector_store
+
+
+def _get_embedding(model, device: str = None):
+    """
+    Get the HuggingFace embedding.
+
+    Returns:
+        HuggingFace Embedding with the preset embedding model.
+    """
+    embedding = HuggingFaceEmbedding(
+        model_name=model["name"],
+        max_length=model["tensor_size"],
+        device=device,  # cpu|cuda
+    )
+    return embedding
+
+
+def insert_nodes(nodes, table_name, model):
+    """
+    Nodes into Vector
+
+    Returns:
+        None
+    """
+    # Vector DB Initialization
+    embed_model = _get_embedding(model)
+    vector_store = _init_vector_store(table_name, model["dimensions"])
+    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+    # Index Nodes into Vector DB
+    VectorStoreIndex(
+        nodes,
+        embed_model=embed_model,
+        storage_context=storage_context,
+        stshow_progress=True,
+    )
+
+
+def get_retriver(model, table_name):
+    embed_model = _get_embedding(model)
+    vector_store = _init_vector_store(table_name, model["dimensions"])
+
+    index = VectorStoreIndex.from_vector_store(
+        vector_store=vector_store,
+        embed_model=embed_model,
+    )
+
+    retriever = index.as_retriever(similarity_top_k=10)
+
+    return retriever

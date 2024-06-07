@@ -1,0 +1,10 @@
+llama-index==0.10.28 # https://pypi.org/project/llama-index/
+llama-index-embeddings-huggingface==0.2.0  # https://pypi.org/project/llama-index-embeddings-huggingface/
+llama-index-vector-stores-postgres==0.1.5  # https://pypi.org/project/llama-index-vector-stores-postgres/
+lxml==5.2.2  # https://github.com/lxml/lxml
+openai==1.23.6  # https://github.com/openai/openai-python
+# pandas==2.2.2  # https://github.com/pandas-dev/pandas/
+python-dotenv==1.0.1  # https://github.com/theskumar/python-dotenv
+streamlit==1.34.0  # https://github.com/streamlit/streamlit
+tabulate==0.9.0  # https://github.com/astanin/python-tabulate
+transformers==4.39.3  # https://pypi.org/project/transformers/
